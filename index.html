@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#17634f">
-  <title>课程实验待办清单</title>
+  <title>任务清单</title>
   <link rel="stylesheet" href="styles.css">
   <script src="app.js" defer></script>
 </head>
@@ -12,30 +12,50 @@
   <main class="workspace">
     <header class="page-header">
       <div>
-        <p class="eyebrow"><span class="brand-mark" aria-hidden="true">✓</span> 我的学习空间</p>
-        <h1>课程实验待办清单</h1>
-        <p class="intro">把实验记下来，让每一次完成都看得见。</p>
+        <p class="eyebrow"><span class="brand-mark" aria-hidden="true">✓</span> 我的任务空间</p>
+        <h1 id="page-title">任务清单</h1>
+        <p class="intro">把任务记下来，让每一次完成都看得见。</p>
       </div>
-      <span class="storage-badge"><span aria-hidden="true"></span> 保存在当前浏览器</span>
+      <div class="header-actions">
+        <button id="edit-name-button" class="secondary-button" type="button" aria-controls="name-panel" aria-expanded="false">设置名字</button>
+        <span class="storage-badge"><span aria-hidden="true"></span> 保存在当前浏览器</span>
+      </div>
     </header>
+
+    <section id="name-panel" class="card name-panel" aria-labelledby="name-heading" hidden>
+      <h2 id="name-heading">给清单加上你的名字</h2>
+      <p class="section-description" id="name-help">填好后会显示“某某某的任务清单”。也可以留空，之后随时修改。</p>
+      <form id="name-form">
+        <label for="name-input">你的名字（可选）</label>
+        <input id="name-input" name="name" type="text" maxlength="40" placeholder="例如：小明" autocomplete="off" aria-describedby="name-help">
+        <div class="name-actions">
+          <button class="primary-button" type="submit">保存名字</button>
+          <button id="cancel-name-button" class="secondary-button" type="button">暂不设置</button>
+        </div>
+      </form>
+      <p id="name-message" class="message error-message" role="alert" hidden></p>
+    </section>
 
     <section class="overview" aria-label="任务统计">
       <div class="stat"><span>未完成</span><strong id="active-count">0</strong><small>接下来要做的事</small></div>
       <div class="stat"><span>已完成</span><strong id="completed-count">0</strong><small>每一步都有积累</small></div>
-      <div class="stat"><span>全部任务</span><strong id="total-count">0</strong><small>你的实验记录</small></div>
+      <div class="stat"><span>全部任务</span><strong id="total-count">0</strong><small>你的任务记录</small></div>
     </section>
 
     <div class="content-grid">
       <!-- 第一步：表单只收集数据，JavaScript 负责处理提交。 -->
       <section class="card add-card" aria-labelledby="add-heading">
-        <div class="section-heading"><span class="section-icon" aria-hidden="true">＋</span><h2 id="add-heading">记下一个实验</h2></div>
+        <div class="section-heading"><span class="section-icon" aria-hidden="true">＋</span><h2 id="add-heading">记下一个任务</h2></div>
         <p class="section-description">从一件具体的小任务开始。</p>
         <form id="task-form" novalidate>
           <label for="course-input">课程名称</label>
           <input id="course-input" name="course" type="text" list="course-suggestions" placeholder="例如：机器学习方法" autocomplete="off" required>
           <datalist id="course-suggestions"></datalist>
-          <label for="title-input">实验任务</label>
-          <textarea id="title-input" name="title" rows="4" placeholder="例如：完成 Lab 1 的数据预处理" required></textarea>
+          <label for="title-input">任务内容</label>
+          <textarea id="title-input" name="title" rows="4" placeholder="例如：完成本周的数据预处理作业" required></textarea>
+          <label for="due-date-input">截止日期（DDL，可选）</label>
+          <input id="due-date-input" name="dueDate" type="text" placeholder="例如：10月25日、910、下周五" autocomplete="off" aria-describedby="due-date-help">
+          <p id="due-date-help" class="field-help">格式随你，可以不填；填写后会原样显示。</p>
           <button id="add-button" class="primary-button" type="submit"><span aria-hidden="true">＋</span> 添加任务</button>
         </form>
         <p id="error-message" class="message error-message" role="alert" hidden></p>
@@ -45,7 +65,7 @@
 
       <!-- 第二步：两个筛选条件共同决定显示哪些任务。 -->
       <section class="card list-card" aria-labelledby="list-heading">
-        <div class="list-heading-row"><h2 id="list-heading">我的实验</h2><span class="list-caption">一次专注一件事</span></div>
+        <div class="list-heading-row"><h2 id="list-heading">我的任务</h2><span class="list-caption">一次专注一件事</span></div>
         <div class="filters">
           <div class="status-tabs" role="group" aria-label="按完成状态筛选">
             <button type="button" class="status-tab" data-status="active" aria-pressed="true">未完成</button>
@@ -55,10 +75,10 @@
           <div class="course-filter-wrap"><label class="visually-hidden" for="course-filter">按课程筛选</label><select id="course-filter"><option value="">全部课程</option></select></div>
         </div>
         <p id="list-summary" class="list-summary" aria-live="polite"></p>
-        <ul id="task-list" class="task-list" aria-label="实验任务列表"></ul>
+        <ul id="task-list" class="task-list" aria-label="任务列表"></ul>
         <div id="empty-state" class="empty-state" hidden>
           <div class="empty-illustration" aria-hidden="true"><span>✓</span><i></i><i></i></div>
-          <h3 id="empty-heading">还没有待办实验</h3>
+          <h3 id="empty-heading">还没有待办任务</h3>
           <p id="empty-description">添加第一项任务，开始整理你的学习安排。</p>
         </div>
       </section>

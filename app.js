@@ -4,6 +4,7 @@
 const form = document.querySelector("#task-form");
 const courseInput = document.querySelector("#course-input");
 const titleInput = document.querySelector("#title-input");
+const dueDateInput = document.querySelector("#due-date-input");
 const courseFilter = document.querySelector("#course-filter");
 const courseSuggestions = document.querySelector("#course-suggestions");
 const statusButtons = document.querySelectorAll("[data-status]");
@@ -11,18 +12,88 @@ const taskList = document.querySelector("#task-list");
 const errorMessage = document.querySelector("#error-message");
 const successMessage = document.querySelector("#success-message");
 const STORAGE_KEY = "course-lab-todo-learning-v1";
+// 名字单独保存；保留旧任务的存储 key，无需清空或迁移任务。
+const NAME_STORAGE_KEY = "course-lab-todo-owner-name-v1";
+const nameForm = document.querySelector("#name-form");
+const nameInput = document.querySelector("#name-input");
+const namePanel = document.querySelector("#name-panel");
+const editNameButton = document.querySelector("#edit-name-button");
+const cancelNameButton = document.querySelector("#cancel-name-button");
+const nameMessage = document.querySelector("#name-message");
 const statusNames = { active: "未完成", completed: "已完成", all: "全部" };
 
 // 第二步：tasks 始终包含全部任务。筛选条件单独保存，不修改任务数据。
 let statusFilter = "active";
 let storageReady = true;
 let tasks = loadTasks();
+const savedName = loadName();
+let ownerName = savedName ?? "";
+let nameHasBeenSet = savedName !== null;
 
 function showMessage(text, isError = false) {
   errorMessage.hidden = !isError;
   successMessage.hidden = isError;
   (isError ? errorMessage : successMessage).textContent = text;
 }
+
+function loadName() {
+  try {
+    // null 表示首次使用；空字符串表示已选择使用默认标题。
+    return localStorage.getItem(NAME_STORAGE_KEY);
+  } catch (error) {
+    nameMessage.textContent = "暂时无法读取名字，你仍可以使用任务清单。请检查浏览器存储设置。";
+    nameMessage.hidden = false;
+    return null;
+  }
+}
+
+function renderTitle() {
+  const title = ownerName ? `${ownerName}的任务清单` : "任务清单";
+  document.querySelector("#page-title").textContent = title;
+  document.title = title;
+  editNameButton.textContent = ownerName ? "修改名字" : "设置名字";
+  cancelNameButton.textContent = nameHasBeenSet ? "取消" : "暂不设置";
+}
+
+function setNamePanelOpen(open) {
+  namePanel.hidden = !open;
+  editNameButton.setAttribute("aria-expanded", String(open));
+  if (open) nameInput.value = ownerName;
+}
+
+function saveName(name) {
+  try {
+    localStorage.setItem(NAME_STORAGE_KEY, name);
+    ownerName = name;
+    nameHasBeenSet = true;
+    renderTitle();
+    setNamePanelOpen(false);
+    nameMessage.hidden = true;
+    editNameButton.focus();
+    return true;
+  } catch (error) {
+    nameMessage.textContent = "名字保存失败，本次修改未生效。请检查浏览器存储权限或可用空间后重试。";
+    nameMessage.hidden = false;
+    return false;
+  }
+}
+
+editNameButton.addEventListener("click", () => {
+  setNamePanelOpen(true);
+  nameInput.focus();
+});
+nameForm.addEventListener("submit", event => {
+  event.preventDefault();
+  saveName(nameInput.value.trim());
+});
+cancelNameButton.addEventListener("click", () => {
+  if (!nameHasBeenSet) {
+    saveName("");
+  } else {
+    setNamePanelOpen(false);
+    editNameButton.focus();
+  }
+});
 
 // 第三步：读取和保存。写入成功后才更新页面，避免显示与保存结果不一致。
 function loadTasks() {
@@ -69,13 +140,17 @@ form.addEventListener("submit", event => {
   courseInput.setAttribute("aria-invalid", String(!course));
   titleInput.setAttribute("aria-invalid", String(!title));
   if (!course || !title) {
-    showMessage("请填写课程名称和实验任务，内容不能只有空格。", true);
+    showMessage("请填写课程名称和任务内容，内容不能只有空格。", true);
     (!course ? courseInput : titleInput).focus();
     return;
   }
+  // DDL 是用户自己的文字备注，不解析日期、不限制格式。
+  const dueDate = dueDateInput.value;
   const newTask = { id: crypto.randomUUID(), course, title, completed: false };
+  if (dueDate.trim()) newTask.dueDate = dueDate;
   if (saveTasks([...tasks, newTask])) {
     titleInput.value = "";
+    dueDateInput.value = "";
     titleInput.focus();
     showMessage("任务已添加。若当前筛选条件不匹配，可切换到未完成和全部课程查看。");
   }
@@ -149,7 +224,17 @@ function createTaskElement(task) {
   const course = document.createElement("span");
   course.className = "course-tag";
   course.textContent = task.course;
-  content.append(title, course);
+  const meta = document.createElement("span");
+  meta.className = "task-meta";
+  meta.append(course);
+  // 旧任务没有 dueDate 也能正常显示；所有用户输入都作为纯文本。
+  if (typeof task.dueDate === "string" && task.dueDate.trim()) {
+    const dueDate = document.createElement("span");
+    dueDate.className = "due-date";
+    dueDate.textContent = `DDL：${task.dueDate}`;
+    meta.append(dueDate);
+  }
+  content.append(title, meta);
   label.append(checkbox, content);
   const deleteButton = document.createElement("button");
   deleteButton.type = "button";
@@ -185,18 +270,20 @@ function render() {
     heading = "暂时无法读取任务";
     description = "请先检查浏览器存储设置，已有数据不会被覆盖。";
   } else if (tasks.length === 0) {
-    heading = "还没有待办实验";
+    heading = "还没有待办任务";
     description = "添加第一项任务，开始整理你的学习安排。";
   } else if (!courseFilter.value && statusFilter === "active") {
     heading = "当前任务都已完成";
     description = "做得不错！你可以到已完成列表回顾，也可以添加新任务。";
   } else if (!courseFilter.value && statusFilter === "completed") {
     heading = "还没有已完成的任务";
-    description = "完成一项实验后，勾选它，记录就会出现在这里。";
+    description = "完成一项任务后，勾选它，记录就会出现在这里。";
   }
   document.querySelector("#empty-heading").textContent = heading;
   document.querySelector("#empty-description").textContent = description;
   document.querySelector("#add-button").disabled = !storageReady;
 }
 
+renderTitle();
 render();
+if (!nameHasBeenSet) setNamePanelOpen(true);
