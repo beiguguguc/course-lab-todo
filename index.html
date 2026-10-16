@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17634f">
+  <title>课程实验待办清单</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="workspace">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow"><span class="brand-mark" aria-hidden="true">✓</span> 我的学习空间</p>
+        <h1>课程实验待办清单</h1>
+        <p class="intro">把实验记下来，让每一次完成都看得见。</p>
+      </div>
+      <span class="storage-badge"><span aria-hidden="true"></span> 保存在当前浏览器</span>
+    </header>
+
+    <section class="overview" aria-label="任务统计">
+      <div class="stat"><span>未完成</span><strong id="active-count">0</strong><small>接下来要做的事</small></div>
+      <div class="stat"><span>已完成</span><strong id="completed-count">0</strong><small>每一步都有积累</small></div>
+      <div class="stat"><span>全部任务</span><strong id="total-count">0</strong><small>你的实验记录</small></div>
+    </section>
+
+    <div class="content-grid">
+      <!-- 第一步：表单只收集数据，JavaScript 负责处理提交。 -->
+      <section class="card add-card" aria-labelledby="add-heading">
+        <div class="section-heading"><span class="section-icon" aria-hidden="true">＋</span><h2 id="add-heading">记下一个实验</h2></div>
+        <p class="section-description">从一件具体的小任务开始。</p>
+        <form id="task-form" novalidate>
+          <label for="course-input">课程名称</label>
+          <input id="course-input" name="course" type="text" list="course-suggestions" placeholder="例如：机器学习方法" autocomplete="off" required>
+          <datalist id="course-suggestions"></datalist>
+          <label for="title-input">实验任务</label>
+          <textarea id="title-input" name="title" rows="4" placeholder="例如：完成 Lab 1 的数据预处理" required></textarea>
+          <button id="add-button" class="primary-button" type="submit"><span aria-hidden="true">＋</span> 添加任务</button>
+        </form>
+        <p id="error-message" class="message error-message" role="alert" hidden></p>
+        <p id="success-message" class="message success-message" role="status" hidden></p>
+        <div class="small-note"><span aria-hidden="true">◎</span><p>完成后，任务会收进“已完成”。<br>需要时，随时可以找回来。</p></div>
+      </section>
+
+      <!-- 第二步：两个筛选条件共同决定显示哪些任务。 -->
+      <section class="card list-card" aria-labelledby="list-heading">
+        <div class="list-heading-row"><h2 id="list-heading">我的实验</h2><span class="list-caption">一次专注一件事</span></div>
+        <div class="filters">
+          <div class="status-tabs" role="group" aria-label="按完成状态筛选">
+            <button type="button" class="status-tab" data-status="active" aria-pressed="true">未完成</button>
+            <button type="button" class="status-tab" data-status="completed" aria-pressed="false">已完成</button>
+            <button type="button" class="status-tab" data-status="all" aria-pressed="false">全部</button>
+          </div>
+          <div class="course-filter-wrap"><label class="visually-hidden" for="course-filter">按课程筛选</label><select id="course-filter"><option value="">全部课程</option></select></div>
+        </div>
+        <p id="list-summary" class="list-summary" aria-live="polite"></p>
+        <ul id="task-list" class="task-list" aria-label="实验任务列表"></ul>
+        <div id="empty-state" class="empty-state" hidden>
+          <div class="empty-illustration" aria-hidden="true"><span>✓</span><i></i><i></i></div>
+          <h3 id="empty-heading">还没有待办实验</h3>
+          <p id="empty-description">添加第一项任务，开始整理你的学习安排。</p>
+        </div>
+      </section>
+    </div>
+    <footer>数据仅保存在当前浏览器，切换浏览器或清除网站数据后不会同步保留。</footer>
+  </main>
+</body>
+</html>
